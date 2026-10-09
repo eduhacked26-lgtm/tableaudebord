@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cahier de Bord — Emploi du temps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@400;500;600;700;800&family=Fraunces:ital,wght@0,500;0,600;1,500&display=swap">
+<style>
+:root{
+  --ink:#1c2420; --ink-soft:#4b5750;
+  --paper:#fbfaf6; --paper-raised:#ffffff;
+  --line:#dcd8cc;
+  --forest:#2f5233; --forest-deep:#1e3a22;
+  --radius:10px;
+  --shadow:0 1px 2px rgba(28,36,32,.06), 0 4px 14px rgba(28,36,32,.05);
+
+  --blue:#3d6ea5;  --blue-bg:#e4edf6;
+  --violet:#8a4b9e; --violet-bg:#efe5f4;
+  --teal:#2f6e5e;  --teal-bg:#e3efe9;
+  --amber:#b8891f; --amber-bg:#f6ecd6;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#eae7dd; --ink-soft:#b7b2a4; --paper:#161a17; --paper-raised:#1f2420; --line:#333a34;
+    --forest:#7fbf9a; --forest-deep:#5fa27d;
+    --blue-bg:#1c2a37; --violet-bg:#2c2333; --teal-bg:#1c332b; --amber-bg:#332c19;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#eae7dd; --ink-soft:#b7b2a4; --paper:#161a17; --paper-raised:#1f2420; --line:#333a34;
+  --forest:#7fbf9a; --forest-deep:#5fa27d;
+  --blue-bg:#1c2a37; --violet-bg:#2c2333; --teal-bg:#1c332b; --amber-bg:#332c19;
+}
+*{box-sizing:border-box;}
+body{margin:0; background:var(--paper); color:var(--ink); font-family:'Libre Franklin',system-ui,sans-serif; min-height:100vh;}
+h1,h2,h3{font-family:'Fraunces',Georgia,serif; font-weight:600; margin:0;}
+.app{display:flex; min-height:100vh;}
+
+.sidebar{width:200px; flex-shrink:0; background:var(--forest-deep); color:#f2f0e6; display:flex; flex-direction:column; padding:22px 14px;}
+.brand{font-family:'Fraunces',serif; font-size:1.2rem; font-weight:600; padding:0 8px 22px; line-height:1.2;}
+.brand span{display:block; font-family:'Libre Franklin',sans-serif; font-size:.72rem; font-weight:500; color:#c9d6c9; margin-top:4px;}
+.tabs{display:flex; flex-direction:column; gap:3px;}
+.tab-btn{text-align:left; background:none; border:none; color:#dfe6df; font:inherit; font-size:.94rem; font-weight:500; padding:10px 12px; border-radius:8px; cursor:pointer; display:flex; align-items:center; gap:10px;}
+.tab-btn:hover{background:rgba(255,255,255,.08);}
+.tab-btn.active{background:#f2f0e6; color:var(--forest-deep); font-weight:700;}
+
+.main{flex:1; min-width:0; padding:26px 30px 60px;}
+.topbar{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:18px;}
+.week-nav{display:flex; align-items:center; gap:10px;}
+.week-nav button{background:var(--paper-raised); border:1px solid var(--line); border-radius:8px; width:34px; height:34px; font-size:1rem; cursor:pointer; color:var(--ink);}
+.week-label{font-family:'Fraunces',serif; font-size:1.1rem;}
+.btn{background:var(--forest); color:#fff; border:none; border-radius:8px; padding:9px 15px; font:inherit; font-weight:600; font-size:.85rem; cursor:pointer;}
+.btn.ghost{background:var(--paper-raised); color:var(--ink); border:1px solid var(--line);}
+.btn.small{padding:6px 11px; font-size:.78rem;}
+.btn.danger{background:#a5432f;}
+
+/* class filter */
+.filter-row{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;}
+.chip{font-size:.82rem; font-weight:600; padding:7px 14px; border-radius:20px; cursor:pointer; border:1px solid transparent; background:var(--paper-raised); color:var(--ink-soft); border-color:var(--line);}
+.chip.active{border-color:transparent;}
+
+/* day columns */
+.day-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px;}
+.day-col h2{font-size:1rem; margin-bottom:10px;}
+.session{background:var(--paper-raised); border:1px solid var(--line); border-left:4px solid; border-radius:var(--radius); box-shadow:var(--shadow); padding:12px 14px; margin-bottom:12px; transition:opacity .15s;}
+.session.dim{opacity:.28;}
+.session .time{font-size:.72rem; color:var(--ink-soft); font-weight:600;}
+.session .cls{font-size:.95rem; font-weight:700; margin:2px 0 8px;}
+.session textarea{width:100%; min-height:44px; border:1px solid var(--line); border-radius:6px; padding:6px 8px; font:inherit; font-size:.8rem; background:var(--paper); color:var(--ink); resize:vertical; margin-bottom:6px;}
+.session textarea::placeholder{color:var(--ink-soft);}
+.cover-row{display:flex; align-items:flex-start; gap:6px;}
+.cover-row input[type=checkbox]{margin-top:3px; width:15px; height:15px; accent-color:var(--forest); flex-shrink:0;}
+.cover-row input[type=text]{flex:1; border:none; border-bottom:1px solid var(--line); background:transparent; font:inherit; font-size:.78rem; padding:2px 0; color:var(--ink);}
+.empty-day{font-size:.82rem; color:var(--ink-soft); font-style:italic;}
+
+/* tests table */
+table.tests{width:100%; border-collapse:collapse; font-size:.85rem;}
+table.tests th{text-align:left; font-size:.72rem; color:var(--ink-soft); padding:6px 8px; border-bottom:2px solid var(--line); font-weight:600;}
+table.tests td{padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top;}
+table.tests input, table.tests select{width:100%; border:1px solid transparent; background:transparent; font:inherit; font-size:.85rem; color:var(--ink); padding:3px 4px; border-radius:4px;}
+table.tests input:hover, table.tests select:hover{border-color:var(--line);}
+
+.card{background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:18px 20px;}
+.hint{font-size:.8rem; color:var(--ink-soft); margin-bottom:14px;}
+
+@media print{ .sidebar, .no-print{display:none !important;} .app{display:block;} .main{padding:0;} }
+@media (max-width:800px){
+  .app{flex-direction:column;}
+  .sidebar{width:100%; flex-direction:row; align-items:center; padding:12px 14px; gap:14px;}
+  .brand{padding:0; font-size:1rem;} .brand span{display:none;}
+  .tabs{flex-direction:row; flex:1; overflow-x:auto;}
+  .main{padding:16px;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="sidebar">
+    <div class="brand">📘 Cahier de Bord<span>Sysy — emploi du temps</span></div>
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="week">🗓️ Semaine</button>
+      <button class="tab-btn" data-tab="tests">🧾 Devoirs &amp; examens</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="week-nav">
+        <button id="prevWeek">‹</button>
+        <div class="week-label" id="weekLabel">—</div>
+        <button id="nextWeek">›</button>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn ghost no-print" id="printBtn">🖨️ Imprimer</button>
+        <button class="btn ghost no-print" id="todayBtn">Cette semaine</button>
+      </div>
+    </div>
+
+    <div class="tabpage" id="tab-week">
+      <div class="filter-row" id="filterRow"></div>
+      <div class="day-grid" id="dayGrid"></div>
+    </div>
+
+    <div class="tabpage" id="tab-tests" style="display:none">
+      <div class="card">
+        <h2 style="margin-bottom:4px;">Devoirs, contrôles &amp; examens</h2>
+        <div class="hint">Toutes classes et toutes semaines confondues, triées par date.</div>
+        <table class="tests">
+          <thead><tr><th style="width:18%">Classe</th><th style="width:14%">Type</th><th style="width:13%">Date</th><th>Description</th><th style="width:13%">Statut</th><th style="width:32px"></th></tr></thead>
+          <tbody id="testsBody"></tbody>
+        </table>
+        <button class="btn ghost small no-print" id="addTestBtn" style="margin-top:10px;">＋ Ajouter une échéance</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const CLASSES = [
+  {name:'1S1', color:'blue'},
+  {name:'3ème lettres', color:'violet'},
+  {name:'4ème sc.exp', color:'teal'},
+  {name:'4ème maths', color:'amber'},
+];
+function colorOf(cls){ const c = CLASSES.find(x=>x.name===cls); return c ? c.color : 'blue'; }
+
+const DAYS = [
+  {key:'mon', label:'Lundi'},
+  {key:'wed', label:'Mercredi'},
+  {key:'fri', label:'Vendredi'},
+  {key:'sat', label:'Samedi'},
+];
+
+const SESSIONS = [
+  {id:'m1', day:'mon', start:'14', end:'16', cls:'3ème lettres'},
+  {id:'m2', day:'mon', start:'16', end:'17', cls:'1S1'},
+  {id:'w1', day:'wed', start:'8',  end:'9',  cls:'3ème lettres'},
+  {id:'w2', day:'wed', start:'9',  end:'10', cls:'4ème sc.exp'},
+  {id:'w3', day:'wed', start:'10', end:'11', cls:'4ème maths'},
+  {id:'f1', day:'fri', start:'8',  end:'9',  cls:'4ème sc.exp'},
+  {id:'f2', day:'fri', start:'9',  end:'10', cls:'3ème lettres'},
+  {id:'f3', day:'fri', start:'10', end:'11', cls:'1S1'},
+  {id:'s1', day:'sat', start:'8',  end:'9',  cls:'3ème lettres'},
+  {id:'s2', day:'sat', start:'10', end:'12', cls:'4ème maths'},
+  {id:'s3', day:'sat', start:'12', end:'13', cls:'4ème sc.exp'},
+];
+
+let state = load();
+let currentMonday = mondayOf(new Date());
+let activeFilter = null;
+
+function load(){
+  try{
+    const raw = localStorage.getItem('teacherPlanner_v2');
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {weeks:{}, tests:[]};
+}
+function save(){ try{ localStorage.setItem('teacherPlanner_v2', JSON.stringify(state)); }catch(e){} }
+function mondayOf(d){
+  const nd = new Date(d);
+  const day = nd.getDay();
+  nd.setDate(nd.getDate() + (day===0 ? -6 : 1-day));
+  nd.setHours(0,0,0,0);
+  return nd;
+}
+function weekKeyOf(d){ return d.toISOString().slice(0,10); }
+function fmtDate(d){ return d.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}); }
+function weekBucket(){
+  const k = weekKeyOf(currentMonday);
+  if(!state.weeks[k]) state.weeks[k] = {};
+  return state.weeks[k];
+}
+function uid(){ return 't'+Math.random().toString(36).slice(2,9); }
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tabpage').forEach(p=>p.style.display='none');
+    document.getElementById('tab-'+btn.dataset.tab).style.display='block';
+  });
+});
+
+document.getElementById('prevWeek').onclick=()=>{ currentMonday.setDate(currentMonday.getDate()-7); refreshWeek(); };
+document.getElementById('nextWeek').onclick=()=>{ currentMonday.setDate(currentMonday.getDate()+7); refreshWeek(); };
+document.getElementById('todayBtn').onclick=()=>{ currentMonday = mondayOf(new Date()); refreshWeek(); };
+document.getElementById('printBtn').onclick=()=>window.print();
+
+function refreshWeek(){
+  const end = new Date(currentMonday); end.setDate(end.getDate()+5);
+  document.getElementById('weekLabel').textContent = fmtDate(currentMonday)+' \u2192 '+fmtDate(end);
+  renderDayGrid();
+}
+
+function renderFilterRow(){
+  const wrap = document.getElementById('filterRow');
+  wrap.innerHTML='';
+  const allChip = el('button',{class:'chip'+(activeFilter===null?' active':'')},'Toutes');
+  if(activeFilter===null){ allChip.style.background='var(--forest)'; allChip.style.color='#fff'; }
+  allChip.onclick=()=>{ activeFilter=null; renderFilterRow(); renderDayGrid(); };
+  wrap.appendChild(allChip);
+  CLASSES.forEach(c=>{
+    const chip = el('button',{class:'chip'+(activeFilter===c.name?' active':'')}, c.name);
+    if(activeFilter===c.name){
+      chip.style.background = `var(--${c.color})`;
+      chip.style.color = '#fff';
+    } else {
+      chip.style.background = `var(--${c.color}-bg)`;
+      chip.style.color = `var(--${c.color})`;
+    }
+    chip.onclick=()=>{ activeFilter = (activeFilter===c.name ? null : c.name); renderFilterRow(); renderDayGrid(); };
+    wrap.appendChild(chip);
+  });
+}
+
+function renderDayGrid(){
+  const grid = document.getElementById('dayGrid');
+  grid.innerHTML='';
+  const bucket = weekBucket();
+  DAYS.forEach(d=>{
+    const col = el('div',{class:'day-col'});
+    col.appendChild(el('h2',{}, d.label));
+    const daySessions = SESSIONS.filter(s=>s.day===d.key).sort((a,b)=>Number(a.start)-Number(b.start));
+    if(daySessions.length===0) col.appendChild(el('div',{class:'empty-day'},'Pas de cours.'));
+    daySessions.forEach(s=>{
+      const dim = activeFilter!==null && activeFilter!==s.cls;
+      const color = colorOf(s.cls);
+      const card = el('div',{class:'session'+(dim?' dim':'')});
+      card.style.borderLeftColor = `var(--${color})`;
+      card.appendChild(el('div',{class:'time'}, s.start+'h\u2013'+s.end+'h'));
+      const clsLine = el('div',{class:'cls'}, s.cls);
+      clsLine.style.color = `var(--${color})`;
+      card.appendChild(clsLine);
+
+      const cov = bucket[s.id] || {plan:'', done:false, note:''};
+      const planTa = el('textarea',{placeholder:'Objectif de la semaine...'});
+      planTa.value = cov.plan||'';
+      planTa.oninput=()=>{ cov.plan=planTa.value; bucket[s.id]=cov; save(); };
+      card.appendChild(planTa);
+
+      const row = el('div',{class:'cover-row'});
+      const cb = el('input',{type:'checkbox'}); cb.checked=!!cov.done;
+      cb.onchange=()=>{ cov.done=cb.checked; bucket[s.id]=cov; save(); };
+      row.appendChild(cb);
+      const note = el('input',{type:'text', placeholder:'Couvert : ce qui a été vu...'});
+      note.value = cov.note||'';
+      note.oninput=()=>{ cov.note=note.value; bucket[s.id]=cov; save(); };
+      row.appendChild(note);
+      card.appendChild(row);
+
+      col.appendChild(card);
+    });
+    grid.appendChild(col);
+  });
+}
+
+/* ---- tests ---- */
+function renderTests(){
+  const body = document.getElementById('testsBody');
+  body.innerHTML='';
+  const sorted = [...state.tests].sort((a,b)=>(a.date||'9999').localeCompare(b.date||'9999'));
+  sorted.forEach(t=>{
+    const tr = el('tr');
+    const clsTd = el('td');
+    const clsSel = el('select');
+    CLASSES.forEach(c=>{
+      const o = el('option',{value:c.name}, c.name);
+      if(t.cls===c.name) o.selected=true;
+      clsSel.appendChild(o);
+    });
+    clsSel.onchange=()=>{ t.cls=clsSel.value; save(); };
+    clsTd.appendChild(clsSel);
+    tr.appendChild(clsTd);
+
+    const typeTd = el('td');
+    const typeSel = el('select');
+    ['Contrôle','Examen','Devoir maison','Interrogation','Projet'].forEach(opt=>{
+      const o = el('option',{value:opt}, opt);
+      if(t.type===opt) o.selected=true;
+      typeSel.appendChild(o);
+    });
+    typeSel.onchange=()=>{ t.type=typeSel.value; save(); };
+    typeTd.appendChild(typeSel);
+    tr.appendChild(typeTd);
+
+    const dateTd = el('td');
+    const dateInp = el('input',{type:'date', value:t.date||''});
+    dateInp.onchange=()=>{ t.date=dateInp.value; save(); renderTests(); };
+    dateTd.appendChild(dateInp);
+    tr.appendChild(dateTd);
+
+    const descTd = el('td');
+    const descInp = el('input',{type:'text', value:t.desc||''});
+    descInp.oninput=()=>{ t.desc=descInp.value; save(); };
+    descTd.appendChild(descInp);
+    tr.appendChild(descTd);
+
+    const statusTd = el('td');
+    const statusSel = el('select');
+    ['Planifié','Donné','Corrigé'].forEach(opt=>{
+      const o = el('option',{value:opt}, opt);
+      if(t.status===opt) o.selected=true;
+      statusSel.appendChild(o);
+    });
+    statusSel.onchange=()=>{ t.status=statusSel.value; save(); };
+    statusTd.appendChild(statusSel);
+    tr.appendChild(statusTd);
+
+    const delTd = el('td');
+    const del = el('button',{class:'btn danger small no-print'},'\u2715');
+    del.onclick=()=>{ state.tests = state.tests.filter(x=>x.id!==t.id); save(); renderTests(); };
+    delTd.appendChild(del);
+    tr.appendChild(delTd);
+
+    body.appendChild(tr);
+  });
+}
+document.getElementById('addTestBtn').onclick=()=>{
+  state.tests.push({id:uid(), cls:CLASSES[0].name, type:'Contrôle', date:'', desc:'', status:'Planifié'});
+  save(); renderTests();
+};
+
+function el(tag, attrs, text){
+  const e = document.createElement(tag);
+  attrs = attrs || {};
+  Object.keys(attrs).forEach(k=>{
+    if(k==='style') e.setAttribute('style', attrs[k]);
+    else if(k in e) e[k]=attrs[k];
+    else e.setAttribute(k, attrs[k]);
+  });
+  if(text!==undefined) e.textContent = text;
+  return e;
+}
+
+renderFilterRow();
+refreshWeek();
+renderTests();
+</script>
+</body>
+</html>
